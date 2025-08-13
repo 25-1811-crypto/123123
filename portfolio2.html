@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>요우무 탄막 게임 - 모드 선택</title>
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            user-select: none;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background: #222;
+            border: 2px solid #555;
+            width: 800px; /* 원본 코드의 고정 너비 */
+            height: 1000px; /* 원본 코드의 고정 높이 */
+        }
+
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            text-align: center;
+            display: none;
+            z-index: 10;
+        }
+
+        #lives,
+        #hpBar,
+        #characterName,
+        #ultimateIcons {
+            display: none;
+        }
+
+        #lives {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 28px;
+            color: red;
+            z-index: 10;
+        }
+
+        #hpBar {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 400px;
+            height: 24px;
+            background: #444;
+            border-radius: 12px;
+            overflow: hidden;
+            z-index: 10;
+            display: flex;
+            position: relative;
+        }
+
+        #hpBarInner {
+            height: 100%;
+            background: #4caf50;
+            width: 100%;
+            transition: width 0.3s ease-out, background-color 0.3s ease;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        #hpRemainingText {
+            position: absolute;
+            right: 10px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            display: none;
+        }
+
+
+        #characterName {
+            position: absolute;
+            bottom: 140px;
+            left: 10px;
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        #ultimateIcons {
+            position: absolute;
+            top: 50px;
+            right: 20px;
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+        }
+
+        .ultimate-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: cyan;
+            box-shadow: 0 0 5px cyan;
+        }
+
+        #modeSelect {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: black;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        #modeSelect h1 {
+            font-size: 48px;
+            margin-bottom: 30px;
+        }
+
+        #modeSelect button {
+            padding: 20px 40px;
+            font-size: 24px;
+            margin: 10px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            /* 원본 스타일 유지 */
+        }
+
+        #modeSelect button:hover {
+            background: #555;
+            /* 원본 스타일 유지 */
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="modeSelect">
+        <h1>모드를 선택하세요</h1>
+        <button onclick="startGameMode('easy')">이지 모드</button>
+        <button onclick="startGameMode('hard')">하드 모드</button>
+    </div>
+
+    <div id="message"></div>
+    <div id="lives">❤️❤️❤️</div>
+    <div id="hpBar">
+        <div id="hpBarInner">
+            <span id="hpRemainingText"></span>
+        </div>
+    </div>
+    <div id="ultimateIcons"></div>
+    <div id="characterName">레이무</div>
+    <canvas id="gameCanvas" width="800" height="1000"></canvas>
+
+
+    <script>
+        let gameMode = ''; // 현재 게임 모드를 저장할 변수
+
+        // 게임 모드 시작 함수
+        function startGameMode(mode) {
+            gameMode = mode;
+            document.getElementById("modeSelect").style.display = "none"; // 모드 선택 화면 숨김
+
+            // 이미지 로딩 메시지 표시
+            document.getElementById("message").textContent = "이미지 로딩 중...";
+            document.getElementById("message").style.display = "block";
+
+            // 모든 이미지 로딩을 기다린 후 게임 초기화
+            loadImages().then(() => {
+                document.getElementById("message").style.display = "none"; // 로딩 메시지 숨김
+                document.getElementById("lives").style.display = "block"; // 라이프 표시
+                document.getElementById("hpBar").style.display = "flex"; // HP 바 표시
+                document.getElementById("ultimateIcons").style.display = "flex"; // 필살기 아이콘 표시
+                document.getElementById("characterName").style.display = "block"; // 캐릭터 이름 표시
+
+                // 하드 모드일 때만 #hpRemainingText를 표시
+                if (gameMode === 'hard') {
+                    document.getElementById("hpRemainingText").style.display = "block";
+                } else {
+                    document.getElementById("hpRemainingText").style.display = "none";
+                }
+                initGame(); // 게임 초기화 시작
+            }).catch(error => {
+                console.error("이미지 로딩 실패:", error);
+                document.getElementById("message").textContent = "오류: 이미지 로딩 실패. 새로고침 해주세요.";
+                document.getElementById("message").style.display = "block";
+            });
+        }
+
+        // 이미지 로딩 함수
+        function loadImages() {
+            return new Promise((resolve, reject) => {
+                let imagesToLoad = 4; // 로드할 이미지 개수
+
+                const playerImg = new Image();
+                playerImg.crossOrigin = "anonymous";
+                // 플레이어 이미지 URL을 유효한 placeholder 이미지로 변경
+                playerImg.src = "https://lh6.googleusercontent.com/proxy/jrzFpj_POiLSNyg6pl6MVsT1_HLNK4QFofFPFM2_2UhORrnhaLF_jk7eAkkJ5LKKjqiLbby9cWUpZ3zzIcDEKtO2U5FKt99kER3U8bQ2G5L8XDxoXR_vR_luBXYcpeCkV5LxrjLQECMpoADxnw-k6Yrcw4YLH73ldsqYi6rr1RwzzLNdmQ";
+
+                const enemyImg = new Image();
+                enemyImg.crossOrigin = "anonymous";
+                enemyImg.src = "https://static-cdn.jtvnw.net/jtv_user_pictures/d5352573-234b-4369-9cce-e1b4dda73fb6-profile_image-300x300.jpeg";
+
+                const enemyPhase2Img = new Image();
+                enemyPhase2Img.crossOrigin = "anonymous";
+                enemyPhase2Img.src = "https://image.zeta-ai.io/profile-image/cde6be35-35b2-419a-b831-8490002257a9/21e3f3ae-74a7-40ae-aca5-e0d3d6835162.jpeg?w=3840&q=75&f=webp";
+
+                const yukariImg = new Image();
+                yukariImg.crossOrigin = "anonymous";
+                yukariImg.src = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSkTvdVEq4_y1XVQPKAFeSkrRo9gxEe0WHuRA&s";
+
+                // 모든 이미지가 로드될 때까지 기다림
+                const checkLoad = () => {
+                    imagesToLoad--;
+                    if (imagesToLoad === 0) {
+                        // 모든 이미지가 로드되면 전역 변수에 할당하고 resolve
+                        window.playerImg = playerImg;
+                        window.enemyImg = enemyImg;
+                        window.enemyPhase2Img = enemyPhase2Img;
+                        window.yukariImg = yukariImg;
+                        resolve();
+                    }
+                };
+
+                playerImg.onload = checkLoad;
+                enemyImg.onload = checkLoad;
+                enemyPhase2Img.onload = checkLoad;
+                yukariImg.onload = checkLoad;
+
+                playerImg.onerror = reject;
+                enemyImg.onerror = reject;
+                enemyPhase2Img.onerror = reject;
+                yukariImg.onerror = reject;
+            });
+        }
+
+
+        // 게임 초기화 함수
+        function initGame() {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            const messageEl = document.getElementById('message');
+            const livesEl = document.getElementById('lives');
+            const hpBarEl = document.getElementById('hpBar');
+            const hpBarInnerEl = document.getElementById('hpBarInner');
+            const hpRemainingTextEl = document.getElementById('hpRemainingText');
+            const ultimateIconsEl = document.getElementById('ultimateIcons');
+            const characterNameEl = document.getElementById('characterName');
+
+            // 플레이어 객체 정의
+            const player = {
+                x: canvas.width / 2 - 40,
+                y: canvas.height - 140,
+                width: 80,
+                height: 110,
+                speed: 7,
+                lives: 3,
+                bullets: [],
+                shootCooldown: 0,
+            };
+
+            // 적 객체 정의
+            const enemy = {
+                x: canvas.width / 2 - 50,
+                y: 70,
+                width: 100,
+                height: 100,
+                currentMaxLifeHp: gameMode === 'hard' ? 300 : 300, // 단일 페이즈의 최대 HP
+                currentLifeHp: gameMode === 'hard' ? 300 : 300,   // 현재 페이즈의 HP
+                totalLives: gameMode === 'hard' ? 3 : 1,         // 적의 총 페이즈 수 (하드 3줄, 이지 1줄)
+                speed: 1.7,
+                direction: 1,
+                moveChangeCooldown: 0,
+                bullets: [],
+                shootCooldown: 0,
+                trackingShootCooldown: 0, // 추적 총알 쿨다운
+                burstShootCooldown: 0,    // 2페이즈 원형 폭발 총알 쿨다운 (새로운 패턴용)
+            };
+
+            // 이미지들은 loadImages()에서 전역 변수로 이미 로드됨.
+            // 여기서는 이미 로드된 이미지를 사용.
+
+            let currentEnemyImg = window.enemyImg; // 현재 적 이미지를 관리하는 변수
+
+            const keys = {}; // 눌린 키 상태 저장
+            let gameOver = false; // 게임 오버 상태
+            let shiftPressed = false; // Shift 키 눌림 상태
+            let ultimateCount = 3; // 필살기 사용 가능 횟수
+            let ultimateActive = false; // 필살기 활성화 상태
+            let ultimateCharacter = null; // 필살기 발동 시 표시될 캐릭터 이미지
+            let ultimateDisplayTime = 0; // 필살기 캐릭터 이미지 표시 시간
+            let yukariLaser = null; // 유카리 레이저 (Shift + Z 사용 시)
+
+            // 총알 클래스 정의
+            class Bullet {
+                constructor(x, y, dx, dy, owner, isSeed = false, burstTriggerY = 0) {
+                    this.x = x;
+                    this.y = y;
+                    this.radius = isSeed ? 8 : 4.5; // 씨앗 총알은 더 크게
+                    this.dx = dx;
+                    this.dy = dy;
+                    this.owner = owner;
+                    this.isSeed = isSeed; // 씨앗 총알 여부
+                    this.burstTriggerY = burstTriggerY; // 폭발할 Y 좌표
+                }
+
+                // 총알 위치 업데이트
+                update() {
+                    this.x += this.dx;
+                    this.y += this.dy;
+                }
+
+                // 총알 그리기
+                draw() {
+                    if (this.owner === 'yukariLaser') {
+                        // 유카리 레이저 그리기
+                        ctx.strokeStyle = 'violet';
+                        ctx.lineWidth = 5;
+                        ctx.beginPath();
+                        ctx.moveTo(this.x, this.y);
+                        ctx.lineTo(this.x, this.y - 50);
+                        ctx.stroke();
+                    } else {
+                        // 일반 총알 그리기
+                        ctx.fillStyle = this.owner === 'player' ? 'cyan' : 'magenta';
+                        if (this.isSeed) { // 씨앗 총알은 원형으로
+                            ctx.fillStyle = 'orange'; // 씨앗 총알 색상
+                        }
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                // 화면 밖으로 나갔는지 확인
+                isOffScreen() {
+                    return this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height;
+                }
+
+                // 다른 객체와 충돌했는지 확인 (간단한 사각형 충돌)
+                collidesWith(obj) {
+                    const distX = Math.abs(this.x - (obj.x + obj.width / 2));
+                    const distY = Math.abs(this.y - (obj.y + obj.height / 2));
+                    return distX < obj.width / 2 && distY < obj.height / 2;
+                }
+
+                // 씨앗 총알 폭발 함수 (원형으로 총알 생성)
+                burst() {
+                    const newBullets = []; // 새 총알을 담을 로컬 배열
+                    const numBullets = 12; // 폭발 시 생성될 총알 수
+                    const burstSpeed = 3; // 폭발 총알의 속도
+                    for (let i = 0; i < numBullets; i++) {
+                        const angle = (Math.PI * 2 / numBullets) * i; // 원형 배치 각도
+                        const dx = burstSpeed * Math.cos(angle);
+                        const dy = burstSpeed * Math.sin(angle);
+                        newBullets.push(new Bullet(this.x, this.y, dx, dy, 'enemy'));
+                    }
+                    return newBullets; // 새 총알 배열 반환
+                }
+            }
+
+            // 적 움직임 업데이트
+            function updateEnemyMovement() {
+                if (enemy.moveChangeCooldown <= 0) {
+                    // 80% 확률로 방향 변경
+                    if (Math.random() < 0.8) enemy.direction *= -1;
+                    // 움직임 변경 쿨다운 재설정
+                    enemy.moveChangeCooldown = Math.floor(Math.random() * 40) + 30;
+                    // 속도 랜덤 재설정
+                    enemy.speed = Math.random() * 1 + 1.2;
+                } else enemy.moveChangeCooldown--;
+                enemy.x += enemy.speed * enemy.direction;
+                // 화면 경계에 도달하면 방향 반전
+                if (enemy.x <= 20 || enemy.x >= canvas.width - enemy.width - 20) enemy.direction *= -1;
+            }
+
+            // 플레이어 라이프 UI 업데이트
+            function updateLivesUI() {
+                livesEl.textContent = "❤️".repeat(player.lives);
+            }
+
+            // HP 바 UI 업데이트
+            function updateHPBar() {
+                const percentage = Math.max(0, enemy.currentLifeHp / enemy.currentMaxLifeHp);
+                hpBarInnerEl.style.width = `${percentage * 100}%`;
+
+                // HP 바 색상 변경 (잔여 HP에 따라)
+                if (percentage < 0.3) {
+                    hpBarInnerEl.style.backgroundColor = '#f55'; // 빨간색
+                } else if (percentage < 0.6) {
+                    hpBarInnerEl.style.backgroundColor = '#fa5'; // 주황색
+                } else {
+                    hpBarInnerEl.style.backgroundColor = '#4caf50'; // 초록색
+                }
+
+                // 남은 체력 줄 수 표시 (하드 모드만)
+                if (gameMode === 'hard') {
+                    hpRemainingTextEl.textContent = `x${enemy.totalLives}`;
+                    hpRemainingTextEl.style.display = 'block';
+                } else {
+                    hpRemainingTextEl.style.display = 'none';
+                }
+            }
+
+            // 필살기 아이콘 UI 업데이트
+            function updateUltimateIcons() {
+                ultimateIconsEl.innerHTML = '';
+                for (let i = 0; i < ultimateCount; i++) {
+                    const icon = document.createElement('div');
+                    icon.className = 'ultimate-icon';
+                    ultimateIconsEl.appendChild(icon);
+                }
+            }
+
+            // 메시지 표시
+            function showMessage(text) {
+                messageEl.textContent = text;
+                messageEl.style.display = 'block';
+            }
+
+            // 메시지 숨김
+            function hideMessage() {
+                messageEl.style.display = 'none';
+            }
+
+            // 필살기 사용
+            function useUltimate() {
+                if (ultimateCount <= 0 || ultimateActive || gameOver) return;
+                ultimateCount--;
+                updateUltimateIcons();
+                enemy.bullets = []; // 모든 적 총알 제거
+                ultimateCharacter = shiftPressed ? window.yukariImg : window.playerImg; // 필살기 사용 캐릭터 이미지 설정
+                ultimateDisplayTime = 90; // 필살기 캐릭터 이미지 표시 시간 (1.5초)
+                ultimateActive = true;
+                setTimeout(() => { ultimateActive = false; }, 1500); // 1.5초 후 필살기 비활성화
+            }
+
+            // 게임 상태 업데이트
+            function update() {
+                if (gameOver) return;
+
+                // 플레이어 이동 속도 조절 (Shift 키 누르면 느려짐)
+                player.speed = shiftPressed ? 3 : 7;
+                if (keys['arrowleft']) player.x -= player.speed;
+                if (keys['arrowright']) player.x += player.speed;
+                if (keys['arrowup']) player.y -= player.speed;
+                if (keys['arrowdown']) player.y += player.speed;
+
+                // 플레이어 화면 경계 제한
+                player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+                player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
+
+                // 적 이미지 변경 로직 (하드 모드, 체력 2줄 이하 시 2페이즈 이미지로)
+                if (gameMode === 'hard' && enemy.totalLives <= 2) {
+                    currentEnemyImg = window.enemyPhase2Img;
+                } else {
+                    currentEnemyImg = window.enemyImg;
+                }
+
+                // 플레이어 총알 업데이트 및 충돌 처리
+                player.bullets = player.bullets.filter(b => {
+                    b.update(); // 총알 위치 업데이트
+                    if (b.isOffScreen()) return false; // 화면 밖으로 나가면 제거
+                    if (b.collidesWith(enemy)) {
+                        enemy.currentLifeHp -= 10; // 적 HP 감소
+                        if (enemy.currentLifeHp <= 0) {
+                            enemy.totalLives--; // 적 페이즈 감소
+                            if (enemy.totalLives <= 0) {
+                                gameOver = true;
+                                showMessage("🎉 요우무를 이겼습니다!"); // 게임 승리 메시지
+                            } else {
+                                enemy.currentLifeHp = enemy.currentMaxLifeHp; // 다음 페이즈로 전환, HP 초기화
+                                enemy.bullets = []; // 적 총알 초기화
+                            }
+                        }
+                        return false; // 총알이 적에게 맞았으므로 제거
+                    }
+                    return true; // 총알 유지
+                });
+
+                // 유카리 레이저 업데이트 및 충돌 처리
+                if (yukariLaser) {
+                    yukariLaser.update();
+                    if (yukariLaser.isOffScreen() || yukariLaser.collidesWith(enemy)) {
+                        if (yukariLaser.collidesWith(enemy)) {
+                            enemy.currentLifeHp -= 20; // 적 HP 감소 (레이저는 더 큰 피해)
+                            if (enemy.currentLifeHp <= 0) {
+                                enemy.totalLives--;
+                                if (enemy.totalLives <= 0) {
+                                    gameOver = true;
+                                    showMessage("🎉 요우무를 이겼습니다!");
+                                } else {
+                                    enemy.currentLifeHp = enemy.currentMaxLifeHp;
+                                    enemy.bullets = [];
+                                }
+                            }
+                        }
+                        yukariLaser = null; // 레이저 제거
+                    }
+                }
+
+                // 일반 적 움직임 및 공격 패턴 실행
+                updateEnemyMovement(); // 일반 적 움직임
+
+                // 일반 총알 발사 및 업데이트
+                if (enemy.shootCooldown <= 0) {
+                    const bulletSpeed = 4;
+                    const centerX = enemy.x + enemy.width / 2;
+                    const centerY = enemy.y + enemy.height;
+
+                    // 일반 총알 패턴
+                    for (let angle = -0.3; angle <= 0.3; angle += 0.3) {
+                        const dx = bulletSpeed * Math.sin(angle);
+                        const dy = bulletSpeed * Math.cos(angle);
+                        enemy.bullets.push(new Bullet(centerX, centerY, dx, dy, 'enemy'));
+                    }
+                    enemy.shootCooldown = 60; // 일반 총알 쿨다운 (1초)
+
+                    // 하드 모드에서 추적 총알 패턴 추가
+                    if (gameMode === 'hard' && enemy.trackingShootCooldown <= 0) {
+                        const targetX = player.x + player.width / 2;
+                        const targetY = player.y + player.height / 2;
+                        const angleToPlayer = Math.atan2(targetY - centerY, targetX - centerX);
+                        const trackingBulletSpeed = 5;
+                        const trackingDx = trackingBulletSpeed * Math.cos(angleToPlayer);
+                        const trackingDy = trackingBulletSpeed * Math.sin(angleToPlayer);
+                        enemy.bullets.push(new Bullet(centerX, centerY, trackingDx, trackingDy, 'enemy'));
+                        enemy.trackingShootCooldown = 90; // 추적 총알 쿨다운 (1.5초)
+                    }
+                } else {
+                    enemy.shootCooldown--;
+                    if (gameMode === 'hard') {
+                        enemy.trackingShootCooldown--;
+                    }
+                }
+
+                // 하드 모드 2페이즈 새로운 패턴: 폭발하는 씨앗 총알
+                let newBulletsFromBurst = []; // 폭발로 새로 생성된 총알을 임시로 저장할 배열
+
+                if (gameMode === 'hard' && enemy.totalLives <= 2 && enemy.burstShootCooldown <= 0) {
+                    const seedSpeed = 2; // 씨앗 총알의 초기 속도
+                    const burstYOffset = 150; // 씨앗 총알이 폭발할 적 기준 Y 거리 (조절 가능)
+                    const centerX = enemy.x + enemy.width / 2;
+                    const centerY = enemy.y + enemy.height; // 적의 발사 지점 (아래쪽)
+
+                    // 양옆으로 2개의 씨앗 총알 발사
+                    // 왼쪽 씨앗
+                    enemy.bullets.push(new Bullet(centerX - 30, centerY, -seedSpeed * 0.5, seedSpeed, 'enemy', true, centerY + burstYOffset));
+                    // 오른쪽 씨앗
+                    enemy.bullets.push(new Bullet(centerX + 30, centerY, seedSpeed * 0.5, seedSpeed, 'enemy', true, centerY + burstYOffset));
+
+                    enemy.burstShootCooldown = 240; // 폭발 총알 쿨다운 (아주 가끔씩 = 4초)
+                } else if (gameMode === 'hard' && enemy.totalLives <= 2) { // 2페이즈일 때만 쿨다운 감소
+                    enemy.burstShootCooldown--;
+                }
+
+                // 모든 적 총알 업데이트 및 플레이어와의 충돌 처리
+                enemy.bullets = enemy.bullets.filter(b => {
+                    b.update(); // 총알 위치 업데이트
+
+                    // 씨앗 총알이 폭발 지점에 도달했는지 확인
+                    if (b.isSeed && b.y >= b.burstTriggerY) {
+                        newBulletsFromBurst.push(...b.burst()); // 폭발하여 생성된 총알을 임시 배열에 추가
+                        return false; // 씨앗 총알은 제거
+                    }
+
+                    // 화면 밖으로 나가면 제거
+                    if (b.isOffScreen()) return false;
+
+                    // 플레이어와 충돌했는지 확인 (씨앗 총알은 직접적인 피해를 주지 않음, 폭발 후 생성된 총알이 피해를 줌)
+                    // 따라서 !b.isSeed 조건 추가
+                    if (!b.isSeed && b.collidesWith(player)) {
+                        player.lives--;
+                        updateLivesUI();
+                        if (player.lives <= 0) {
+                            gameOver = true;
+                            showMessage("💀 당신은 패배했습니다...");
+                        }
+                        return false; // 총알이 플레이어에게 맞았으므로 제거
+                    }
+                    return true; // 총알 유지
+                });
+
+                // 필터링된 총알 배열에 새로 생성된 폭발 총알들을 추가합니다.
+                enemy.bullets = enemy.bullets.concat(newBulletsFromBurst);
+
+                if (player.shootCooldown > 0) player.shootCooldown--; // 플레이어 총알 쿨다운 감소
+
+                updateHPBar(); // HP 바 UI 업데이트
+            }
+
+            // 게임 요소 그리기
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height); // 캔버스 지우기
+
+                // 현재 적 이미지 그리기
+                if (currentEnemyImg && currentEnemyImg.complete) { // 이미지 객체 존재 및 로딩 완료 확인
+                    ctx.drawImage(currentEnemyImg, enemy.x, enemy.y, enemy.width, enemy.height);
+                }
+
+                // 필살기 발동 시 캐릭터 이미지 그리기
+                if (ultimateCharacter && ultimateDisplayTime > 0 && ultimateCharacter.complete) { // 이미지 로딩 완료 확인
+                    ctx.drawImage(ultimateCharacter, canvas.width / 2 - 100, canvas.height / 2 - 100, 200, 200);
+                    ultimateDisplayTime--;
+                }
+
+                // 플레이어 캐릭터 그리기 및 이름 표시
+                if (shiftPressed && window.yukariImg && window.yukariImg.complete) { // 이미지 객체 존재 및 로딩 완료 확인
+                    ctx.drawImage(window.yukariImg, player.x, player.y, player.width, player.height);
+                    characterNameEl.textContent = "야쿠모 유카리";
+                } else {
+                    if (window.playerImg && window.playerImg.complete) { // 이미지 객체 존재 및 로딩 완료 확인
+                        ctx.drawImage(window.playerImg, player.x, player.y, player.width, player.height);
+                    }
+                    characterNameEl.textContent = "레이무";
+                }
+
+                player.bullets.forEach(b => b.draw()); // 플레이어 총알 그리기
+                if (yukariLaser) yukariLaser.draw(); // 유카리 레이저 그리기
+                enemy.bullets.forEach(b => b.draw()); // 적 총알 그리기
+            }
+
+            // 메인 게임 루프
+            function gameLoop() {
+                update(); // 게임 상태 업데이트
+                draw();   // 게임 요소 그리기
+                if (!gameOver) requestAnimationFrame(gameLoop); // 게임 오버가 아니면 다음 프레임 요청
+            }
+
+            // 키 눌림 이벤트 리스너
+            window.addEventListener('keydown', e => {
+                keys[e.key.toLowerCase()] = true; // 눌린 키 상태 true로 설정
+                if (e.key === 'Shift') shiftPressed = true; // Shift 키 눌림 상태 업데이트
+
+                // 'Z' 키 (발사) 처리
+                if (e.key.toLowerCase() === 'z' && player.shootCooldown === 0 && !gameOver) {
+                    const bulletX = player.x + player.width / 2;
+                    const bulletY = player.y;
+
+                    if (shiftPressed) {
+                        // Shift 키가 눌려있으면 유카리 레이저 발사
+                        if (!yukariLaser) { // 레이저가 없을 때만 생성
+                            yukariLaser = new Bullet(bulletX, bulletY, 0, -20, 'yukariLaser');
+                        }
+                    } else {
+                        // Shift 키가 눌려있지 않으면 일반 총알 발사
+                        player.bullets.push(new Bullet(bulletX, bulletY, 0, -10, 'player'));
+                    }
+                    player.shootCooldown = 12; // 플레이어 총알 쿨다운 (0.2초)
+                }
+
+                // 'X' 키 (필살기 사용) 처리
+                if (e.key.toLowerCase() === 'x') useUltimate();
+            });
+
+            // 키 떼는 이벤트 리스너
+            window.addEventListener('keyup', e => {
+                keys[e.key.toLowerCase()] = false; // 키 떼면 상태 false로 설정
+                if (e.key === 'Shift') {
+                    shiftPressed = false; // Shift 키 떼는 상태 업데이트
+                }
+            });
+
+            // 게임 시작 시 UI 초기화 및 게임 루프 시작
+            updateLivesUI();
+            updateHPBar();
+            updateUltimateIcons();
+            gameLoop(); // 게임 루프 시작
+        }
+    </script>
+</body>
+
+</html>

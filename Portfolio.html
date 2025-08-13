@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>요우무 탄막 게임 - 모드 선택</title>
+  <style>
+    body {
+      margin: 0;
+      background: #000;
+      overflow: hidden;
+      font-family: 'Arial', sans-serif;
+      user-select: none;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: #222;
+      border: 2px solid #555;
+    }
+    #message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 40px;
+      font-weight: bold;
+      text-align: center;
+      display: none;
+      z-index: 10;
+    }
+    #lives, #hpBar, #characterName, #ultimateIcons {
+      display: none;
+    }
+    #lives {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 28px;
+      color: red;
+      z-index: 10;
+    }
+    #hpBar {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 400px;
+      height: 24px;
+      background: #444;
+      border-radius: 12px;
+      overflow: hidden;
+      z-index: 10;
+    }
+    #hpBarInner {
+      height: 100%;
+      width: 100%;
+      background: #4caf50;
+      transition: width 0.3s ease;
+    }
+    #characterName {
+      position: absolute;
+      bottom: 140px;
+      left: 10px;
+      color: white;
+      font-size: 28px;
+      font-weight: bold;
+      z-index: 10;
+    }
+    #ultimateIcons {
+      position: absolute;
+      top: 50px;
+      right: 20px;
+      display: flex;
+      gap: 8px;
+      z-index: 10;
+    }
+    .ultimate-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: cyan;
+      box-shadow: 0 0 5px cyan;
+    }
+    #modeSelect {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: black;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+    #modeSelect h1 {
+      font-size: 48px;
+      margin-bottom: 30px;
+    }
+    #modeSelect button {
+      padding: 20px 40px;
+      font-size: 24px;
+      margin: 10px;
+      background: #333;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #modeSelect button:hover {
+      background: #555;
+    }
+  </style>
+</head>
+<body>
+
+<!-- 모드 선택 화면 -->
+<div id="modeSelect">
+  <h1>모드를 선택하세요</h1>
+  <button onclick="startEasyMode()">이지 모드</button>
+  <button onclick="startHardMode()">하드 모드</button>
+</div>
+
+<!-- 게임 UI -->
+<div id="message"></div>
+<div id="lives">❤️❤️❤️</div>
+<div id="hpBar"><div id="hpBarInner"></div></div>
+<div id="ultimateIcons"></div>
+<div id="characterName">레이무</div>
+<canvas id="gameCanvas" width="800" height="1000"></canvas>
+
+<script>
+  function startEasyMode() {
+    document.getElementById("modeSelect").style.display = "none";
+    document.getElementById("lives").style.display = "block";
+    document.getElementById("hpBar").style.display = "block";
+    document.getElementById("ultimateIcons").style.display = "flex";
+    document.getElementById("characterName").style.display = "block";
+    initEasyMode();
+  }
+
+  function startHardMode() {
+    const modeDiv = document.getElementById("modeSelect");
+    modeDiv.innerHTML = "<h1>하드 모드는 아직 준비되지 않았습니다.</h1><p style='font-size: 20px;'>다음 업데이트를 기대해 주세요!</p>";
+  }
+
+  function initEasyMode() {
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const messageEl = document.getElementById('message');
+    const livesEl = document.getElementById('lives');
+    const hpBarInner = document.getElementById('hpBarInner');
+    const ultimateIconsEl = document.getElementById('ultimateIcons');
+    const characterNameEl = document.getElementById('characterName');
+
+    const player = {
+      x: canvas.width / 2 - 40,
+      y: canvas.height - 140,
+      width: 80,
+      height: 110,
+      speed: 7,
+      lives: 3,
+      bullets: [],
+      shootCooldown: 0,
+    };
+
+    const enemy = {
+      x: canvas.width / 2 - 50,
+      y: 70,
+      width: 100,
+      height: 100,
+      hp: 300,
+      speed: 1.7,
+      direction: 1,
+      moveChangeCooldown: 0,
+      bullets: [],
+      shootCooldown: 0,
+    };
+
+    const playerImg = new Image();
+    playerImg.crossOrigin = "anonymous";
+    playerImg.src = "https://lh6.googleusercontent.com/proxy/jrzFpj_POiLSNyg6pl6MVsT1_HLNK4QFofFPFM2_2UhORrnhaLF_jk7eAkkJ5LKKjqiLbby9cWUpZ3zzIcDEKtO2U5FKt99kER3U8bQ2G5L8XDxoXR_vR_luBXYcpeCkV5LxrjLQECMpoADxnw-k6Yrcw4YLH73ldsqYi6rr1RwzzLNdmQ";
+    const enemyImg = new Image();
+    enemyImg.crossOrigin = "anonymous";
+    enemyImg.src = "https://static-cdn.jtvnw.net/jtv_user_pictures/d5352573-234b-4369-9cce-e1b4dda73fb6-profile_image-300x300.jpeg";
+    const yukariImg = new Image();
+    yukariImg.crossOrigin = "anonymous";
+    yukariImg.src = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSkTvdVEq4_y1XVQPKAFeSkrRo9gxEe0WHuRA&s";
+
+    const keys = {};
+    let gameOver = false;
+    let shiftPressed = false;
+    let ultimateCount = 3;
+    let ultimateActive = false;
+    let ultimateCharacter = null;
+    let ultimateDisplayTime = 0;
+    let yukariLaser = null;
+
+    class Bullet {
+      constructor(x, y, dx, dy, owner) {
+        this.x = x;
+        this.y = y;
+        this.radius = 4.5;
+        this.dx = dx;
+        this.dy = dy;
+        this.owner = owner;
+      }
+      update() {
+        this.x += this.dx;
+        this.y += this.dy;
+      }
+      draw() {
+        if (this.owner === 'yukariLaser') {
+          ctx.strokeStyle = 'violet';
+          ctx.lineWidth = 5;
+          ctx.beginPath();
+          ctx.moveTo(this.x, this.y);
+          ctx.lineTo(this.x, this.y - 50);
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = this.owner === 'player' ? 'cyan' : 'magenta';
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      isOffScreen() {
+        return this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height;
+      }
+      collidesWith(obj) {
+        const distX = Math.abs(this.x - (obj.x + obj.width / 2));
+        const distY = Math.abs(this.y - (obj.y + obj.height / 2));
+        return distX < obj.width / 2 && distY < obj.height / 2;
+      }
+    }
+
+    function updateEnemyMovement() {
+      if (enemy.moveChangeCooldown <= 0) {
+        if (Math.random() < 0.8) enemy.direction *= -1;
+        enemy.moveChangeCooldown = Math.floor(Math.random() * 40) + 30;
+        enemy.speed = Math.random() * 1 + 1.2;
+      } else enemy.moveChangeCooldown--;
+      enemy.x += enemy.speed * enemy.direction;
+      if (enemy.x <= 20 || enemy.x >= canvas.width - enemy.width - 20) enemy.direction *= -1;
+    }
+
+    function updateLivesUI() {
+      livesEl.textContent = "❤️".repeat(player.lives);
+    }
+
+    function updateHPBar() {
+      let ratio = enemy.hp / 300;
+      ratio = Math.max(0, ratio);
+      hpBarInner.style.width = (ratio * 100) + '%';
+      hpBarInner.style.backgroundColor = ratio < 0.3 ? '#f55' : ratio < 0.6 ? '#fa5' : '#4caf50';
+    }
+
+    function updateUltimateIcons() {
+      ultimateIconsEl.innerHTML = '';
+      for (let i = 0; i < ultimateCount; i++) {
+        const icon = document.createElement('div');
+        icon.className = 'ultimate-icon';
+        ultimateIconsEl.appendChild(icon);
+      }
+    }
+
+    function showMessage(text) {
+      messageEl.textContent = text;
+      messageEl.style.display = 'block';
+    }
+
+    function hideMessage() {
+      messageEl.style.display = 'none';
+    }
+
+    function useUltimate() {
+      if (ultimateCount <= 0 || ultimateActive || gameOver) return;
+      ultimateCount--;
+      updateUltimateIcons();
+      enemy.bullets = [];
+      ultimateCharacter = shiftPressed ? yukariImg : playerImg;
+      ultimateDisplayTime = 90;
+      ultimateActive = true;
+      setTimeout(() => { ultimateActive = false; }, 1500);
+    }
+
+    function update() {
+      if (gameOver) return;
+      player.speed = shiftPressed ? 3 : 7;
+      if (keys['arrowleft']) player.x -= player.speed;
+      if (keys['arrowright']) player.x += player.speed;
+      if (keys['arrowup']) player.y -= player.speed;
+      if (keys['arrowdown']) player.y += player.speed;
+      player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+      player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
+
+      updateEnemyMovement();
+
+      // 일반 총알 업데이트 및 충돌 처리
+      player.bullets = player.bullets.filter(b => {
+        b.update();
+        if (b.isOffScreen()) return false;
+        if (b.collidesWith(enemy)) {
+          enemy.hp -= 10;
+          if (enemy.hp <= 0) {
+            gameOver = true;
+            showMessage("🎉 요우무를 이겼습니다!");
+          }
+          return false;
+        }
+        return true;
+      });
+
+      // 유카리 레이저 업데이트 및 충돌 처리 (별도 관리)
+      if (yukariLaser) {
+        yukariLaser.update();
+        if (yukariLaser.isOffScreen() || yukariLaser.collidesWith(enemy)) {
+          if (yukariLaser.collidesWith(enemy)) {
+            enemy.hp -= 20;
+            if (enemy.hp <= 0) {
+              gameOver = true;
+              showMessage("🎉 요우무를 이겼습니다!");
+            }
+          }
+          yukariLaser = null;
+        }
+      }
+
+      // 적 총알 발사 및 업데이트
+      if (enemy.shootCooldown <= 0) {
+        const bulletSpeed = 4;
+        const centerX = enemy.x + enemy.width / 2;
+        const centerY = enemy.y + enemy.height;
+        for (let angle = -0.3; angle <= 0.3; angle += 0.3) {
+          const dx = bulletSpeed * Math.sin(angle);
+          const dy = bulletSpeed * Math.cos(angle);
+          enemy.bullets.push(new Bullet(centerX, centerY, dx, dy, 'enemy'));
+        }
+        enemy.shootCooldown = 60;
+      } else enemy.shootCooldown--;
+
+      enemy.bullets = enemy.bullets.filter(b => {
+        b.update();
+        if (b.isOffScreen()) return false;
+        if (b.collidesWith(player)) {
+          player.lives--;
+          updateLivesUI();
+          if (player.lives <= 0) {
+            gameOver = true;
+            showMessage("💀 당신은 패배했습니다...");
+          }
+          return false;
+        }
+        return true;
+      });
+
+      if (player.shootCooldown > 0) player.shootCooldown--;
+
+      updateHPBar();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(enemyImg, enemy.x, enemy.y, enemy.width, enemy.height);
+      if (ultimateCharacter && ultimateDisplayTime > 0) {
+        ctx.drawImage(ultimateCharacter, canvas.width / 2 - 100, canvas.height / 2 - 100, 200, 200);
+        ultimateDisplayTime--;
+      }
+      if (shiftPressed && yukariImg.complete) {
+        ctx.drawImage(yukariImg, player.x, player.y, player.width, player.height);
+        characterNameEl.textContent = "야쿠모 유카리";
+      } else {
+        if (playerImg.complete) ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+        characterNameEl.textContent = "레이무";
+      }
+      player.bullets.forEach(b => b.draw());
+      if (yukariLaser) yukariLaser.draw();
+      enemy.bullets.forEach(b => b.draw());
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      if (!gameOver) requestAnimationFrame(gameLoop);
+    }
+
+    window.addEventListener('keydown', e => {
+      keys[e.key.toLowerCase()] = true;
+      if (e.key === 'Shift') shiftPressed = true;
+
+      if (e.key.toLowerCase() === 'z' && player.shootCooldown === 0 && !gameOver) {
+        const bulletX = player.x + player.width / 2;
+        const bulletY = player.y;
+
+        if (shiftPressed) {
+          // 쉬프트 눌렀으면 yukariLaser가 없을 때만 생성
+          if (!yukariLaser) {
+            yukariLaser = new Bullet(bulletX, bulletY, 0, -20, 'yukariLaser');
+          }
+        } else {
+          // 쉬프트 안 눌렀을 때만 일반 총알 발사
+          player.bullets.push(new Bullet(bulletX, bulletY, 0, -10, 'player'));
+        }
+        player.shootCooldown = 12;
+      }
+
+      if (e.key.toLowerCase() === 'x') useUltimate();
+    });
+
+    window.addEventListener('keyup', e => {
+      keys[e.key.toLowerCase()] = false;
+      if (e.key === 'Shift') {
+        shiftPressed = false;
+      }
+    });
+
+    updateLivesUI();
+    updateHPBar();
+    updateUltimateIcons();
+    gameLoop();
+  }
+</script>
+</body>
+</html>

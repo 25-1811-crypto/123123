@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="신주현의 포트폴리오">
+    <meta name="name" content="신주현">
+    <meta name="keywords" content="HTML5,신주현,CSS,프로젝트,포트폴리오">
+     <link rel="stylesheet" href="css/style.css" id="mainCssLink"> 
+    <title>신주현의 포트폴리오</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=East+Sea+Dokdo&display=swap');
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>신주현의 포트폴리오</h1>
+            <div class="style-toggle-container">
+        <button id="toggleStyleBtn" class="toggle-style-btn">스타일 변경</button>
+    </div>
+    <script>
+    // 1. 스타일을 변경할 link 태그를 ID로 가져옵니다.
+    const mainCssLink = document.getElementById('mainCssLink');
+    // 2. 스타일 변경 버튼을 ID로 가져옵니다.
+    const toggleStyleBtn = document.getElementById('toggleStyleBtn');
+
+    // 3. 버튼 클릭 이벤트 리스너를 추가합니다.
+    toggleStyleBtn.addEventListener('click', () => {
+        // 4. 현재 link 태그의 href 속성 값을 확인합니다.
+        const currentStyle = mainCssLink.getAttribute('href');
+
+        // 5. 현재 스타일이 style.css이면 style2.css로, 아니면 style.css로 변경합니다.
+        if (currentStyle === 'css/style.css') {
+            mainCssLink.setAttribute('href', 'css/style2.css');
+            toggleStyleBtn.textContent = '기본 스타일로 돌아가기'; // 버튼 텍스트 변경 (선택 사항)
+        } else {
+            mainCssLink.setAttribute('href', 'css/style.css');
+            toggleStyleBtn.textContent = '스타일 변경'; // 버튼 텍스트 변경 (선택 사항)
+        }
+    });
+</script>
+    </header>
+    <main>
+        <section class="section">
+            <div>
+                <nav class="menubar">
+                    <ul class="menu">
+                        <li><a href="#about-me" class="menu-link">about me</a></li>
+                        <li><a href="#skills" class="menu-link">skills</a></li>
+                        <li><a href="#portfolio" class="menu-link">Portfolio</a></li>
+                        <li><a href="#contact" class="menu-link">contact</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </section>
+        <section class="section2">
+            <h2 class="about-me" id="about-me">about me</h2>
+            <ul class="about-me-item">
+                <li class="margin">
+                    <p>이름:신주현</p>
+                </li>
+                <li class="margin">나이:17살</li>
+                <li class="margin">최종학력:중졸</li>
+                <li class="margin">현재 진학중인 학교:수원정보과학고등학교</li>
+            </ul>
+        </section>
+
+        <section class="section3">
+            <h2 id="skills">skills</h2>
+
+            <ul class="skills">
+                <li class="margin">html5</li>
+                <li class="margin">css</li>
+                <li class="margin">잔머리</li>
+            </ul>
+
+        </section>
+
+        <section class="section4">
+            <h2 id="portfolio">Portfolio</h2>
+            <div class="portfolio-preview" onclick="window.open('Portfolio.html', '_blank')">
+                <iframe src="Portfolio.html" title="포트폴리오 미리보기" frameborder="0"></iframe>
+                <div class="overlay">포트폴리오로 이동</div>
+            </div>  
+        </section>
+        <section class="section5">
+            <h2 id="contact">contact</h2>
+            <ul class="margin">
+                <li class="margin">
+                    <p>세상에서 제일 코딩을 잘하는 사람이 될 남자 <span class="sjh">신주현</span> 입니다.</p>
+                </li>
+                <li class="margin">tel:01037609614</li>
+                <li class="margin">e-mail:25-1811@swjb.hs.kr</li>
+            </ul>
+        </section>
+    </main>
+
+    <footer>
+        &copy; by 신주현 All Right reserves
+
+    </footer>
+</body>
+
+</html>
